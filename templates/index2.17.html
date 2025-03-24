@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>停车记录查询</title>
+    <!-- 引入 Element UI 样式 -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/element-ui/lib/theme-chalk/index.css">
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .status-emoji {
+            font-size: 22px;
+        }
+
+        .emoji-read {
+            color: #2ecc71;
+        }
+
+        .emoji-unread {
+            color: #e74c3c;
+        }
+
+        .el-table th {
+            text-align: center;
+        }
+
+        .el-table td {
+            text-align: center;
+        }
+
+        .el-message {
+          text-align: center;  /* 使文本居中 */
+          font-size: 32px;      /* 设置字体大小 */
+          padding: 15px 15px;   /* 控制通知框的内边距，调整通知框的大小 */
+        }
+
+        select, button {
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- 选项卡 -->
+        <el-tabs v-model="activeTab" class="mb-4">
+            <!-- Tab 1 - 停车记录查询 -->
+            <el-tab-pane label="快数据" name="fast">
+                <!--
+                <el-row class="mb-4" type="flex" direction="column">
+                    <el-col :span="24" class="text-right">
+                        <el-button class="mb-2" type="primary" size="large" :round="true" @click="fetchData">手动刷新</el-button>
+                        <el-select v-model="refreshInterval" @change="handleIntervalChange" placeholder="自动刷新间隔" class="d-inline-block w-auto">
+                            <el-option label="2秒" :value="2000"></el-option>
+                            <el-option label="10秒" :value="10000"></el-option>
+                            <el-option label="60秒" :value="60000"></el-option>
+                            <el-option label="不自动刷新" :value="0"></el-option>
+                        </el-select>
+                    </el-col>
+                </el-row>
+                -->
+                <el-table v-if="activeTab === 'fast'" :data="tableDataFast" stripe style="width: 100%" :default-sort="{prop: 'create_time', order: 'descending'}">
+                    <el-table-column label="状态" width="80">
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.state === '已读'" class="status-emoji emoji-read">🟠</span>
+                            <span v-else class="status-emoji emoji-unread">🟢</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="车牌" prop="plateNum"></el-table-column>
+                    <el-table-column label="车场" prop="parkName"></el-table-column>
+                    <el-table-column label="地址" prop="detailAddress"></el-table-column>
+                    <el-table-column label="入场时间" prop="inTime"></el-table-column>
+                    <el-table-column label="创建时间" prop="create_time"></el-table-column>
+                    <el-table-column label="查询时间" prop="residenceTime"></el-table-column>
+                    <el-table-column label="对接/业务" prop="applicant"></el-table-column>
+                    <el-table-column label="备注" prop="company"></el-table-column>
+                    <el-table-column label="月租车" width="80" prop="monthlyRent"></el-table-column>
+                    <el-table-column label="来源" prop="webName"></el-table-column>
+                    <el-table-column label="操作" width="100" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="success" @click="handleCopy(scope.row)">复制</el-button>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="标为未读" width="130" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="warning" @click="markAsUnread(scope.row)">标为未读</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-tab-pane>
+
+            <!-- Tab 2 - 第二个 Tab 内容 -->
+            <el-tab-pane label="慢数据" name="slow">
+                <!--
+                <el-row class="mb-4" type="flex" direction="column">
+                    <el-col :span="24" class="text-right">
+                        <el-button class="mb-2" type="primary" size="large" :round="true" @click="fetchData">手动刷新</el-button>
+                        <el-select v-model="refreshInterval" @change="handleIntervalChange" placeholder="自动刷新间隔" class="d-inline-block w-auto">
+                            <el-option label="2秒" :value="2000"></el-option>
+                            <el-option label="10秒" :value="10000"></el-option>
+                            <el-option label="60秒" :value="60000"></el-option>
+                            <el-option label="不自动刷新" :value="0"></el-option>
+                        </el-select>
+                    </el-col>
+                </el-row>
+                -->
+                <el-table v-if="activeTab === 'slow'" :data="tableDataSlow" stripe style="width: 100%" :default-sort="{prop: 'create_time', order: 'descending'}">
+                    <el-table-column label="状态" width="80">
+                        <template slot-scope="scope">
+                            <span v-if="scope.row.state === '已读'" class="status-emoji emoji-read">🟠</span>
+                            <span v-else class="status-emoji emoji-unread">🟢</span>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="车牌" prop="plateNum"></el-table-column>
+                    <el-table-column label="车场" prop="parkName"></el-table-column>
+                    <el-table-column label="地址" prop="detailAddress"></el-table-column>
+                    <el-table-column label="入场时间" prop="inTime"></el-table-column>
+                    <el-table-column label="创建时间" prop="create_time"></el-table-column>
+                    <el-table-column label="查询时间" prop="residenceTime"></el-table-column>
+                    <el-table-column label="对接/业务" prop="applicant"></el-table-column>
+                    <el-table-column label="备注" prop="company"></el-table-column>
+                    <el-table-column label="月租车" width="80" prop="monthlyRent"></el-table-column>
+                    <el-table-column label="来源" prop="webName"></el-table-column>
+                    <el-table-column label="操作" width="100" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="success" @click="handleCopy(scope.row)">复制</el-button>
+                        </template>
+                    </el-table-column>
+                    <el-table-column label="标为未读" width="130" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="warning" @click="markAsUnread(scope.row)">标为未读</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-tab-pane>
+
+            <!-- Tab 3 - 停车记录查询 -->
+            <el-tab-pane label="查询数据" name="search_records">
+                <el-input
+                    v-model="searchFullPlateNum"
+                    placeholder="输入完整车牌号精确搜索"
+                    @keyup.enter.native="searchRecords"
+                    style="width: 300px; margin-bottom: 20px;"
+                ></el-input>
+
+                <el-button
+                    type="primary"
+                    :round="true"
+                    @click="searchRecords"
+                    style="margin-left: 10px;"
+                >搜索</el-button>
+
+                <el-table :data="searchFullPlatesResults" stripe style="width: 100%" :default-sort="{prop: 'create_time', order: 'descending'}">
+                    <el-table-column label="车牌" prop="plateNum"></el-table-column>
+                    <el-table-column label="车场" prop="parkName"></el-table-column>
+                    <el-table-column label="地址" prop="detailAddress"></el-table-column>
+                    <el-table-column label="入场时间" prop="inTime"></el-table-column>
+                    <el-table-column label="创建时间" prop="create_time"></el-table-column>
+                    <el-table-column label="查询时间" prop="residenceTime"></el-table-column>
+                    <el-table-column label="对接/业务" prop="applicant"></el-table-column>
+                    <el-table-column label="备注" prop="company"></el-table-column>
+                    <el-table-column label="月租车" prop="monthlyRent"></el-table-column>
+                    <el-table-column label="来源" prop="webName"></el-table-column>
+                    <el-table-column label="操作" width="100" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="success" @click="handleCopy(scope.row)">复制</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-tab-pane>
+
+            <!-- Tab 4 - 总数据 -->
+            <el-tab-pane label="总数据" name="plate">
+                <!-- <h2>车牌号查询</h2> -->
+                <el-input 
+                    v-model="searchPlateNum" 
+                    placeholder="输入车牌号模糊搜索" 
+                    @keyup.enter.native="searchPlate"
+                    style="width: 300px; margin-bottom: 20px;"
+                ></el-input>
+
+                <el-button 
+                    type="primary" 
+                    :round="true"
+                    @click="searchPlate" 
+                    style="margin-left: 10px;"
+                >搜索</el-button>
+                
+                <el-table :data="searchPlatesResults" stripe style="width: 100%">
+                    <el-table-column label="车牌号" prop="plateNum"></el-table-column>
+                    <el-table-column label="车架号" prop="frameNo"></el-table-column>
+                    <el-table-column label="发动机号" prop="engineNumber"></el-table-column>
+                    <el-table-column label="报单人" prop="applicant"></el-table-column>
+                    <el-table-column label="公司" prop="company"></el-table-column>
+                    <el-table-column label="车型" prop="carModel"></el-table-column>
+                    <el-table-column label="车颜色" prop="color"></el-table-column>
+                    <el-table-column label="佣金" prop="commission"></el-table-column>
+                    <el-table-column label="VIP车牌" prop="vip"></el-table-column>
+                    <el-table-column label="区域" prop="area"></el-table-column>
+                    <el-table-column label="操作" width="100" header-align="center">
+                        <template slot-scope="scope">
+                            <el-button size="large" :round="true" type="success" @click="copyText('plate',scope.row)">复制</el-button>
+                        </template>
+                    </el-table-column>
+                </el-table>
+            </el-tab-pane>
+        </el-tabs>
+    </div>
+
+    <!-- 引入 Vue 和 Element UI JS -->
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/element-ui/lib/index.js"></script>
+    <script>
+        new Vue({
+            el: '#app',
+            data() {
+                return {
+                    activeTab: "fast", // 默认激活的 Tab
+                    refreshInterval: 5000,
+                    tableDataFast: [],
+                    tableDataSlow: [],
+                    refreshIntervalId: null,
+                    singleClickTimeout: null,
+                    searchPlateNum: '',  // 存储用户输入的车牌号
+                    searchFullPlateNum: '',
+                    searchPlatesResults: [],   // 存储搜索结果
+                    searchFullPlatesResults: [],   // 存储搜索records结果
+                };
+            },
+            methods: {
+                // 获取停车记录
+                fetchData() {
+                    fetch('/get_data?tab=fast')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.tableDataFast = data;
+                        })
+                        .catch(err => console.error('获取数据失败', err));
+                    fetch('/get_data?tab=slow')
+                        .then(response => response.json())
+                        .then(data => {
+                            this.tableDataSlow = data;
+                        })
+                        .catch(err => console.error('获取数据失败', err));
+                },
+
+                // 处理自动刷新间隔的变化
+                handleIntervalChange(value) {
+                    clearInterval(this.refreshIntervalId);
+                    if (value > 0) {
+                        this.refreshIntervalId = setInterval(this.fetchData, value);
+                    }
+                },
+
+                markAsRead(record) {
+                // 判断tab是否为'plate'
+                    if (this.activeTab === 'plate') {
+                        return;
+                    }
+                    if (this.activeTab === 'search_records') {
+                        return;
+                    }
+                    record.state = "已读";
+                    const url = `/mark_read?tab=${this.activeTab}`;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ row_num: record.row_num })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === "success") {
+                            this.fetchData();
+                        }
+                    })
+                    .catch(err => console.error('状态更新失败', err));
+                },
+
+                // 标记为未读
+                markAsUnread(record) {
+                    record.state = "";
+                    const url = `/mark_unread?tab=${this.activeTab}`;
+                    fetch(url, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ row_num: record.row_num })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.status === "success") {
+                                // this.$message.warning("成功设置为未读");
+                                this.fetchData();
+                            }
+                        })
+                        .catch(err => console.error('状态更新失败', err));
+                },
+
+                // 单击/双击复制
+                handleCopy(record) {
+                    // 每次点击都触发 this.markAsRead
+                    if (!this.singleClickTimeout) {
+                        this.markAsRead(record);
+                    }
+                    if (this.singleClickTimeout) {
+                        clearTimeout(this.singleClickTimeout);
+                        this.singleClickTimeout = null;
+                        this.copyText('double', record);
+                    } else {
+                        this.singleClickTimeout = setTimeout(() => {
+                            this.copyText('single', record);
+                            this.singleClickTimeout = null;
+                        }, 300);
+                    }
+                },
+
+                // 复制文本
+                copyText(type, record) {
+                    let text;
+                    let toastMessage;
+                    if (type === 'single') {
+                        text = `车   牌: ${record.plateNum}\n车   架: ${record.frameNo}\n车   型: ${record.carModel}\n车场名: ${record.parkName}\n详细地址: ${record.detailAddress}\n*****-->: ${record.webName}\n入场-->: ${record.inTime}\n查询-->: ${record.create_time}\n停留-->: ${record.residenceTime}\n类型-->: ${record.monthlyRent === '是' ? '月租车' : '临时车'}\n备注-->: ${record.company}\n业务-->: ${record.applicant}`;
+                        toastMessage = '单击复制成功';
+                    } else {
+                        text = `车   牌: ${record.plateNum}\n车   架: ${record.frameNo}\n车   型: ${record.carModel}\n发动机: ${record.engineNumber}\n颜   色: ${record.color}\n金   额: ${record.commission}\n区   域: ${record.area}\n备注-->: ${record.company}\n对接-->: ${record.applicant}`;
+                        toastMessage = '双击复制成功';
+                    }
+
+                    if (navigator.clipboard && navigator.clipboard.writeText) {
+                        navigator.clipboard.writeText(text)
+                            .then(() => {
+                                // this.$message.success(toastMessage);
+                                // this.markAsRead(record);
+                            })
+                            .catch(err => console.error('复制失败', err));
+                    } else {
+                        this.fallbackCopyText(type, text, record);
+                    }
+                },
+
+                // 复制失败时的回退方案
+                fallbackCopyText(type, text, record) {
+                    let textarea = document.createElement('textarea');
+                    textarea.value = text;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    try {
+                        document.execCommand('copy');
+                        // this.$message.success(type === 'single' ? '单击复制成功' : '双击复制成功');
+                        // this.markAsRead(record);
+                    } catch (err) {
+                        console.error('复制失败', err);
+                    }
+                    document.body.removeChild(textarea);
+                },
+                // 模糊搜索车牌号
+                searchPlate() {
+                    if (this.searchPlateNum.trim() === '') {
+                        this.searchPlatesResults = [];  // 清空结果
+                        return;
+                    }
+
+                    fetch(`/search_plate?plateNum=${this.searchPlateNum}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.searchPlatesResults = data;  // 显示搜索结果
+                        })
+                        .catch(err => console.error('搜索失败', err));
+                },
+                // 精确搜索车牌号
+                searchRecords() {
+                    if (this.searchFullPlateNum.trim() === '') {
+                        this.searchFullPlatesResults = [];  // 清空结果
+                        return;
+                    }
+
+                    fetch(`/search_records?plateNum=${this.searchFullPlateNum}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.searchFullPlatesResults = data;  // 显示搜索结果
+                        })
+                        .catch(err => console.error('搜索失败', err));
+                }
+            },
+            mounted() {
+                this.fetchData();
+                if (this.refreshInterval > 0) {
+                    this.refreshIntervalId = setInterval(this.fetchData, this.refreshInterval);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
