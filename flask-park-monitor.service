@@ -1,0 +1,14 @@
+[Unit]
+Description=Flask Application for parking monitor, WeChat:yaf000
+After=network.target mysqld.service
+#Requires=mysqld.service
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/opt/park_monitor
+ExecStart=/root/miniconda3/envs/fab/bin/uwsgi --ini /opt/park_monitor/uwsgi.ini
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
